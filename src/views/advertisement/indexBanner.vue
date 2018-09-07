@@ -40,7 +40,7 @@
     </div>
 </template>
 <script>
-import { fetchList, deleteProduct } from '@/api/indexBanner'
+import { fetchList, deleteIndexBanner } from '@/api/indexBanner'
 export default {
     name:'indexBanner',
     data(){
