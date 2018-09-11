@@ -1,6 +1,6 @@
 <template>
     <div class="app-container">
-        <div style="width:75%;margin:0 auto;">
+        <div style="width:82%;margin:0 auto;">
             <el-form :model="productForm" :rules="productRules" ref="productForm" label-width="100px">
                 <el-form-item label="商品名称：" prop="title">
                     <el-input v-model="productForm.title" placeholder="商品名称"></el-input>
@@ -43,86 +43,86 @@ import { getSecondRootClassify } from '@/api/productClassify'
 import { products } from '@/api/product'
 import Tinymce from '@/components/Tinymce'
 export default {
-    name:'create',
-    components: { Tinymce },
-    data(){
-        return {
-            productForm:{
-                title:'',
-                product_classify_id:'',
-                image:'',
-                description:'',
-                on_sale:false,
-            },
-            productRules:{
-                title: [
-                    { required: true, message: '请输入商品名称', trigger: 'blur' }
-                ],
-                product_classify_id: [
-                    { required: true, message: '请选择商品分类', trigger: 'blur' }
-                ],
-                image: [
-                    { required: true, message: '请上传封面图', trigger: 'blur' }
-                ],
-            },
-            secondRootClassify:[],
-            imageUrl:'',
-            error:false,
-            errors:{},
-            submiting:false,
-            uploadUrl:'',
+  name: 'create',
+  components: { Tinymce },
+  data() {
+    return {
+      productForm: {
+        title: '',
+        product_classify_id: '',
+        image: '',
+        description: '',
+        on_sale: false
+      },
+      productRules: {
+        title: [
+          { required: true, message: '请输入商品名称', trigger: 'blur' }
+        ],
+        product_classify_id: [
+          { required: true, message: '请选择商品分类', trigger: 'blur' }
+        ],
+        image: [
+          { required: true, message: '请上传封面图', trigger: 'blur' }
+        ]
+      },
+      secondRootClassify: [],
+      imageUrl: '',
+      error: false,
+      errors: {},
+      submiting: false,
+      uploadUrl: ''
+    }
+  },
+  created() {
+    this.uploadUrl = process.env.BASE_API + '/api/admin/uploadImage'
+    this.getSecondRootClassify()
+  },
+  methods: {
+    handleAvatarSuccess(res, file) {
+      this.productForm.image = process.env.BASE_API + file.response.path
+    },
+    beforeAvatarUpload(file) {
+      const isLt2M = file.size / 1024 / 1024 < 2
+      if (!isLt2M) {
+        this.$message.error('上传头像图片大小不能超过 2MB!')
+      }
+      return isLt2M
+    },
+    getSecondRootClassify() {
+      getSecondRootClassify().then(res => {
+        this.secondRootClassify = res.data
+      })
+    },
+    handleRemove(file, fileList) {
+      console.log(file, fileList)
+    },
+    handlePictureCardPreview(file) {
+      this.imageDialogImageUrl = file.response.path
+      console.log(this.imageDialogImageUrl)
+      this.imageDialogVisible = true
+    },
+    handleSuccess(response, file, fileList) {
+      this.productForm.image = process.env.BASE_API + file.response.path
+    },
+    submitForm(formName) {
+      this.$refs[formName].validate((valid) => {
+        if (valid) {
+          this.submiting = true
+          // console.log(this.productForm);return;
+          products(this.productForm).then(res => {
+            this.submiting = false
+            this.$router.push({ path: '/products/products' })
+          }).catch(error => {
+            this.error = true
+            this.errors = error.response.data.errors
+            this.submiting = false
+          })
+        } else {
+          return false
         }
-    },
-    created(){
-        this.uploadUrl = process.env.BASE_API + '/api/admin/uploadImage'
-        this.getSecondRootClassify();
-    },
-    methods:{
-        handleAvatarSuccess(res, file) {
-            this.productForm.image = process.env.BASE_API + file.response.path;
-        },
-        beforeAvatarUpload(file) {
-            const isLt2M = file.size / 1024 / 1024 < 2;
-            if (!isLt2M) {
-                this.$message.error('上传头像图片大小不能超过 2MB!');
-            }
-            return isLt2M;
-        },
-        getSecondRootClassify(){
-            getSecondRootClassify().then(res =>{
-                this.secondRootClassify = res.data;
-            });
-        },
-        handleRemove(file, fileList) {
-            console.log(file, fileList);
-        },
-        handlePictureCardPreview(file) {
-            this.imageDialogImageUrl = file.response.path;
-            console.log(this.imageDialogImageUrl);
-            this.imageDialogVisible = true;
-        },
-        handleSuccess(response, file, fileList){
-            this.productForm.image = process.env.BASE_API + file.response.path;
-        },
-        submitForm(formName) {
-            this.$refs[formName].validate((valid) => {
-                if (valid) {
-                    this.submiting = true;
-                    // console.log(this.productForm);return;
-                    products(this.productForm).then(res => {
-                        this.submiting = false;
-                        this.$router.push({path:'/products/products'});
-                    }).catch(error => {
-                        this.error = true;
-                        this.errors = error.response.data.errors;
-                        this.submiting = false;
-                    });
-                } else {
-                    return false;
-                }
-            });
-        },
-    },
+      })
+    }
+  }
 }
 </script>
 <style>
