@@ -1,7 +1,7 @@
 <template>
     <div class="app-container">
-        <div style="width:82%;margin:0 auto;">
-            <el-form :model="productForm" :rules="productRules" ref="productForm" label-width="100px">
+        <div style="width:83%;margin:0 auto;">
+            <el-form :model="productForm" :rules="productRules" ref="productForm" label-width="130px">
                 <el-form-item label="商品名称：" prop="title">
                     <el-input v-model="productForm.title" placeholder="商品名称"></el-input>
                 </el-form-item>
@@ -21,15 +21,15 @@
                         <i v-else class="el-icon-plus avatar-uploader-icon"></i>
                     </el-upload>
                 </el-form-item>
+                <el-form-item label="商品描述(简短)：" prop="desc">
+                     <el-input v-model="productForm.desc" placeholder="一句话描述"></el-input>
+                </el-form-item>
                 <el-form-item label="商品描述：">
                     <template>
                         <div class="editor-container">
                             <Tinymce :height=400 ref="editor" v-model="productForm.description" />
                         </div>
                     </template>
-                </el-form-item>
-                <el-form-item label="是否上架：" prop="on_sale">
-                    <el-switch v-model="productForm.on_sale"></el-switch>
                 </el-form-item>
                 <el-form-item>
                     <el-button :loading="submiting" type="primary" @click="submitForm('productForm')">确定</el-button>
@@ -52,11 +52,15 @@ export default {
         product_classify_id: '',
         image: '',
         description: '',
-        on_sale: false
+        on_sale: false,
+        desc:'',
       },
       productRules: {
         title: [
           { required: true, message: '请输入商品名称', trigger: 'blur' }
+        ],
+        desc: [
+          { required: true, message: '请输入商品简介(简短)', trigger: 'blur' }
         ],
         product_classify_id: [
           { required: true, message: '请选择商品分类', trigger: 'blur' }
@@ -97,8 +101,7 @@ export default {
       console.log(file, fileList)
     },
     handlePictureCardPreview(file) {
-      this.imageDialogImageUrl = file.response.path
-      console.log(this.imageDialogImageUrl)
+      this.imageDialogImageUrl = file.response.path 
       this.imageDialogVisible = true
     },
     handleSuccess(response, file, fileList) {
@@ -107,8 +110,7 @@ export default {
     submitForm(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          this.submiting = true
-          // console.log(this.productForm);return;
+          this.submiting = true 
           products(this.productForm).then(res => {
             this.submiting = false
             this.$router.push({ path: '/products/products' })

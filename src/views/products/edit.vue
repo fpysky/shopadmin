@@ -7,7 +7,7 @@
                 </el-form-item>
                 <el-form-item label="商品分类：" prop="product_classify_id">
                     <el-select style="width:100%;" v-model="productForm.product_classify_id" placeholder="商品分类">
-                        <el-option v-for="item in secondRootClassify" :label="item.text" :key="item.id" :value="item.id"></el-option>
+                        <el-option v-for="item in secondRootClassify" :label="item.name" :key="item.id" :value="item.id"></el-option>
                     </el-select>
                 </el-form-item>
                 <el-form-item label="封面图片：" prop="image">
@@ -39,6 +39,9 @@
                             <i class="el-icon-plus"></i>
                         </el-upload>
                     </p>
+                </el-form-item>
+                <el-form-item label="商品描述(简短)：" prop="desc">
+                     <el-input v-model="productForm.desc" placeholder="一句话描述"></el-input>
                 </el-form-item>
                 <el-form-item label="商品描述：">
                     <template>
@@ -122,6 +125,7 @@ export default {
                 sku:[],
                 colorAttribute:{},
                 images:[],
+                desc:'',
             },
             productRules:{
                 title: [
@@ -132,6 +136,9 @@ export default {
                 ],
                 image: [
                     { required: true, message: '请上传封面图', trigger: 'blur' }
+                ],
+                desc: [
+                    { required: true, message: '请输入商品简介(简短)', trigger: 'blur' }
                 ],
             },
             secondRootClassify:[],
@@ -238,6 +245,7 @@ export default {
            getProduct(this.productForm.id).then(res => {
                 this.productForm.id = res.data.list.product.id;
                 this.productForm.title = res.data.list.product.title;
+                this.productForm.desc = res.data.list.product.desc;
                 this.productForm.product_classify_id = res.data.list.product.product_classify_id;
                 this.productForm.image = process.env.BASE_API + res.data.list.product.image;
                 var images = res.data.list.product.images;
@@ -247,7 +255,7 @@ export default {
                     }
                     
                 }
-                this.productForm.images = images;//res.data.list.product.images;
+                this.productForm.images = images;
                 this.productForm.on_sale = res.data.list.product.on_sale;
                 this.productForm.sku = res.data.list.productSkus;
                 this.productForm.description = res.data.list.product.description
