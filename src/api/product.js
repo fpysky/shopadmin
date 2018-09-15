@@ -56,6 +56,14 @@ export function deleteAttributes(data) {
   })
 }
 
+export function deleteSku(data) {
+  return request({
+    url: 'api/admin/productSku',
+    method: 'delete',
+    data
+  })
+}
+
 export function getProduct(query) {
   return request({
     url: 'api/admin/products/' + query,

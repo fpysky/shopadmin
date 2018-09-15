@@ -25,17 +25,18 @@
                     <p>
                         <el-input v-model="imagesValue" style="width:140px;" placeholder="输入颜色"></el-input>
                         <el-button icon="el-icon-plus" @click="addImages(imagesValue)">添加</el-button>
-                        <el-button @click="updateColor" type="primary">保存</el-button> <span style="color:#F56C6C">(需要保存才能执行添加sku操作)</span>
+                        <el-button @click="updateColor" :type="updateColorStatus?'primary':'danger'" v-text="updateColorStatus?'已保存':'未保存'"></el-button> <span style="color:#F56C6C">(需要保存才能执行添加sku操作)</span>
                     </p>
                     <p v-for="(item,index) in productForm.images" :key="index">
                         <el-tag v-text="item.value"></el-tag>
                         <el-upload
                             :action="uploadUrl"
                             list-type="picture-card"
+                            :limit="4"
                             :file-list="item.images"
                             :on-preview="handlePictureCardPreview"
-                            :on-success="((res, file,fileList)=>{handleImagesSuccess(res, file,fileList,item)})"
-                            :on-remove="handleRemove">
+                            :on-success="((res, file, fileList) => { handleImagesSuccess(res, file,fileList, item) })"
+                            :on-remove="((file, fileList) => { handleRemove(file, fileList, item) })">
                             <i class="el-icon-plus"></i>
                         </el-upload>
                     </p>
@@ -59,11 +60,11 @@
                     :key="attributes.key"
                     :prop="'attributes.' + index + '.name'"
                     :rules="{required: true, message: '商品sku类别', trigger: 'blur'}">
-                    <el-input placeholder="商品sku类别" style="width:80%;" v-model="attributes.name"></el-input><el-button style="margin-left:10px;" @click.prevent="removeAttribute(attributes)">删除</el-button>
-                    <el-button type="success" @click="saveAttribute(attributes)">保存</el-button><span style="color:red;"> 保存才能继续</span>
+                    <el-input :disabled="updateAttributesStatus || attributes.id != 0" placeholder="商品sku类别 示例：内存组合、网络制式" style="width:60%;" v-model="attributes.name"></el-input><el-button style="margin-left:10px;" @click.prevent="removeAttribute(attributes)">删除</el-button>
+                    <el-button :disabled="updateAttributesStatus || attributes.id != 0" :type="updateAttributesStatus || attributes.id != 0?'primary':'danger'" v-text="updateAttributesStatus || attributes.id != 0?'已保存':'未保存'" @click="saveAttribute(attributes)"></el-button><span v-if="attributes.id == 0 " style="color:#F56C6C"> (需要保存才能执行添加sku操作)</span>
                 </el-form-item>
                 <el-form-item>
-                    <el-button icon="el-icon-plus" @click="addAttribute">新增商品sku类别</el-button>
+                    <el-button icon="el-icon-plus" :disabled="!updateColorStatus" @click="addAttribute">新增商品sku类别</el-button>
                 </el-form-item>
                 <el-form-item
                     v-for="(sku, index) in productForm.sku"
@@ -89,7 +90,7 @@
                     <el-button style="margin-left:10px;" @click.prevent="removeSku(sku)">删除</el-button>
                 </el-form-item>
                 <el-form-item>
-                    <el-button icon="el-icon-plus" @click="addSku">新增商品sku</el-button>
+                    <el-button icon="el-icon-plus" :disabled="!updateColorStatus || !updateAttributesStatus" @click="addSku">新增商品sku</el-button>
                 </el-form-item>
                 <el-form-item>
                     <el-button :loading="submiting" type="primary" @click="submitForm('productForm')">确定</el-button>
@@ -104,7 +105,7 @@
 <script>
 import Tinymce from '@/components/Tinymce'
 import { getSecondRootClassify } from '@/api/productClassify'
-import { getAttributes, saveAttribute, deleteAttributes, getProduct, updateColor, updateProducts } from '@/api/product'
+import { getAttributes, saveAttribute, deleteAttributes, getProduct, updateColor, updateProducts, deleteSku } from '@/api/product'
 export default {
     name:'edit',
     components: { Tinymce },
@@ -151,6 +152,8 @@ export default {
             fileList:{},
             imagesValue:'',
             uploadUrl:'',
+            updateColorStatus:false,
+            updateAttributesStatus:false,
         }
     },
     created(){
@@ -161,15 +164,34 @@ export default {
     },
     methods:{
         updateColor(){
-            updateColor(this.productForm).then(res => {
-                this.$message.success('添加颜色成功');
-            }).catch(error =>{});
+            this.updateColorStatus = true
+            let images = []
+            this.productForm.images.forEach(item => {
+                let img = []
+                item.images.forEach(imgItem => {
+                    img.push({url: imgItem.url})
+                })
+                images.push({
+                    value: item.value,
+                    images: img
+                })
+            })
+            updateColor({
+                id:this.productForm.id,
+                images: images
+            }).then(res => {
+                this.$message.success('添加颜色成功')
+            }).catch(error =>{
+                this.$message.warning(error.response.data.message)
+            });
         },
         handleImagesSuccess(res, file,fileList,images){
-            images.images.push({"url":process.env.BASE_API + res.path});
+            images.images.push({"url":process.env.BASE_API + res.path})
+            this.updateColorStatus = false
         }, 
-        handleRemove(file, fileList) {
-            // console.log(file, fileList);
+        handleRemove(file, fileList,item) {
+            item.images.splice(item.images.length-1)
+            this.updateColorStatus = false
         },
         handlePictureCardPreview(file) {
             this.dialogImageUrl = file.url;
@@ -196,25 +218,41 @@ export default {
             this.productForm.images.push({
                 value:value,
                 images:[],
-            });
+            })
+            this.imagesValue = ''
         },
         removeSku(item){
-            var index = this.productForm.sku.indexOf(item)
+            // console.log(item)
+            if(item.id != 0){
+                this.deleteSku(item.id)
+            }
+            let index = this.productForm.sku.indexOf(item)
             if (index !== -1) {
                 this.productForm.sku.splice(index, 1)
             }
         },
+        deleteSku(id){
+            deleteSku({id:id}).then(res => {
+                this.$message.success('删除sku成功')
+            }).catch(error => {
+                this.$message.warning(error.response.data.message)
+            })
+        },
         deleteAttributes(attributes){
             deleteAttributes(attributes.id).then(res => {
-                this.$message.success(res.data.message);
+                this.$message.success(res.data.message)
             });
         },
         getAttributes(){
             getAttributes(this.productForm.id).then(res => {
-                this.productForm.attributes = res.data.list;
-            });
+                this.productForm.attributes = res.data.list
+                if(this.productForm.attributes.length > 0){
+                    this.updateAttributesStatus = true
+                }
+            })
         },
         saveAttribute(attributes){
+            this.updateAttributesStatus = true
             saveAttribute(attributes).then(res => {
                 this.productForm.attributes.forEach((item,index) => {
                     if(item.name == res.data.list.name){
@@ -222,12 +260,12 @@ export default {
                     }
                 })
                 this.$message.success('保存成功')
-                console.log(this.productForm.attributes,'this.productForm.attributes')
             }).catch(error => {
                 this.$message.warning('已保存或名字重复!');
             });
         },
         addAttribute(){
+            this.updateAttributesStatus = false
             this.productForm.attributes.push({
                 id:0,
                 name: '',
@@ -235,32 +273,37 @@ export default {
             });
         },
         removeAttribute(item) {
-            this.deleteAttributes(item);
-            var index = this.productForm.attributes.indexOf(item)
+            if(item.id != 0){
+                this.deleteAttributes(item)
+            }else{
+                this.updateAttributesStatus = true
+            }
+            let index = this.productForm.attributes.indexOf(item)
             if (index !== -1) {
                 this.productForm.attributes.splice(index, 1)
             }
         },
         getProduct(){
            getProduct(this.productForm.id).then(res => {
-                this.productForm.id = res.data.list.product.id;
-                this.productForm.title = res.data.list.product.title;
-                this.productForm.desc = res.data.list.product.desc;
-                this.productForm.product_classify_id = res.data.list.product.product_classify_id;
-                this.productForm.image = process.env.BASE_API + res.data.list.product.image;
-                var images = res.data.list.product.images;
-                for(let i = 0;i < images.length;i++){
-                    for(let j = 0;j < images[i]['images'].length;j++){
-                        images[i]['images'][j]['url'] = process.env.BASE_API+ images[i]['images'][j]['url'];
-                    }
-                    
-                }
-                this.productForm.images = images;
-                this.productForm.on_sale = res.data.list.product.on_sale;
-                this.productForm.sku = res.data.list.productSkus;
+                this.productForm.id = res.data.list.product.id
+                this.productForm.title = res.data.list.product.title
+                this.productForm.desc = res.data.list.product.desc
+                this.productForm.product_classify_id = res.data.list.product.product_classify_id
+                this.productForm.image = process.env.BASE_API + res.data.list.product.image
+                this.productForm.images = res.data.list.product.images
+                this.productForm.images.forEach(item => {
+                    item.images.forEach(img => {
+                        img.url = process.env.BASE_API + img.url
+                    })
+                })
+                this.productForm.on_sale = res.data.list.product.on_sale
+                this.productForm.sku = res.data.list.productSkus
                 this.productForm.description = res.data.list.product.description
-            });
-            console.log(this.productForm);
+                if(this.productForm.images.length > 0){
+                    this.updateColorStatus = true
+                }
+            })
+            console.log(this.productForm)
         },
         handleAvatarSuccess(res, file) {
             this.productForm.image = file.response.path;
@@ -276,9 +319,6 @@ export default {
             getSecondRootClassify().then(res =>{
                 this.secondRootClassify = res.data;
             });
-        },
-        handleRemove(file, fileList) {
-            // console.log(file, fileList);
         },
         handleSuccess(response, file, fileList){
             this.productForm.image = file.response.path;
