@@ -72,8 +72,8 @@ export default {
     }
     return {
       loginForm: {
-        username: 'admin',
-        password: '111111'
+        username: '',
+        password: ''
       },
       loginRules: {
         username: [{ required: true, trigger: 'blur'}],//validator: validateUsername
@@ -165,7 +165,7 @@ export default {
           this.loginForm.password = this.loginForm.password.trim()
           this.loginForm.grant_type = 'password'
           this.loginForm.client_id = 2
-          this.loginForm.client_secret = '5IjevVN52Pe3GtiAy63WsViWfNj0L8igdscvcRtL'
+          this.loginForm.client_secret = 'CHCZspEuFcwHwFaEdJzzmSavfNWVVtpRxbkaMgzi'
           this.loginForm.scope = ''
           this.loginForm.provider = 'adminers'
           this.loading = true
